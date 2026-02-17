@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoDren | Sistema Inteligente</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root{
+    --bg:#0f172a;
+    --card:#1e293b;
+    --text:white;
+    --primary:#0ea5e9;
+    --danger:#ef4444;
+}
+
+.light{
+    --bg:#f1f5f9;
+    --card:white;
+    --text:#0f172a;
+}
+
+body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    transition:0.4s;
+}
+
+/* LOGIN */
+#login{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    flex-direction:column;
+    background:linear-gradient(135deg,#0ea5e9,#22c55e);
+}
+
+#login input{
+    padding:10px;
+    margin:5px;
+    border-radius:10px;
+    border:none;
+}
+
+#login button{
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    background:black;
+    color:white;
+    cursor:pointer;
+}
+
+#app{
+    display:none;
+}
+
+header{
+    display:flex;
+    justify-content:space-between;
+    padding:20px;
+    background:linear-gradient(90deg,#0ea5e9,#22c55e);
+}
+
+nav{
+    display:flex;
+    gap:20px;
+    padding:15px;
+    background:var(--card);
+    justify-content:center;
+}
+
+nav button{
+    background:none;
+    border:none;
+    color:var(--text);
+    cursor:pointer;
+}
+
+.section{
+    display:none;
+    padding:20px;
+}
+
+.active{
+    display:block;
+}
+
+.card{
+    background:var(--card);
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.metric{
+    font-size:26px;
+    font-weight:bold;
+}
+
+.alert{
+    color:var(--danger);
+    font-weight:bold;
+}
+
+.sensor-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:10px;
+}
+
+.sensor{
+    padding:15px;
+    border-radius:10px;
+    background:#334155;
+    text-align:center;
+}
+
+#map{
+    height:350px;
+    border-radius:15px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+    <h1>🌍 EcoDren Admin</h1>
+    <input type="text" id="user" placeholder="Usuario">
+    <input type="password" id="pass" placeholder="Contraseña">
+    <button onclick="login()">Ingresar</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<header>
+    <h2>EcoDren - Panel Inteligente</h2>
+    <button onclick="toggleMode()">Modo Claro/Oscuro</button>
+</header>
+
+<nav>
+    <button onclick="showSection('dashboard')">Dashboard</button>
+    <button onclick="showSection('sensores')">Red Sensores</button>
+    <button onclick="showSection('mapa')">Mapa</button>
+    <button onclick="showSection('historico')">Estadísticas</button>
+</nav>
+
+<section id="dashboard" class="section active">
+<div class="card">
+    <h3>Nivel de Basura</h3>
+    <div class="metric" id="basura">0%</div>
+</div>
+
+<div class="card">
+    <h3>Flujo de Agua</h3>
+    <div class="metric" id="flujo">0 L/min</div>
+</div>
+
+<div class="card">
+    <h3>Estado</h3>
+    <div class="metric" id="estado">Normal</div>
+</div>
+
+<button onclick="generarPDF()">Generar Reporte PDF</button>
+</section>
+
+<section id="sensores" class="section">
+<div class="card">
+    <h3>Red de Sensores Conectados</h3>
+    <div class="sensor-grid" id="redSensores"></div>
+</div>
+</section>
+
+<section id="mapa" class="section">
+<div class="card">
+    <div id="map"></div>
+</div>
+</section>
+
+<section id="historico" class="section">
+<div class="card">
+    <canvas id="grafica"></canvas>
+</div>
+</section>
+
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+// LOGIN
+function login(){
+    let u=document.getElementById("user").value;
+    let p=document.getElementById("pass").value;
+    if(u==="EcoDren" && p==="Alcantarilla"){
+        document.getElementById("login").style.display="none";
+        document.getElementById("app").style.display="block";
+    } else {
+        alert("Credenciales incorrectas");
+    }
+}
+
+// SECCIONES
+function showSection(id){
+    document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+// MODO
+function toggleMode(){
+    document.body.classList.toggle("light");
+}
+
+// SIMULACIÓN
+let historial=[];
+function actualizar(){
+    let basura=Math.floor(Math.random()*100);
+    let flujo=Math.floor(Math.random()*600);
+
+    document.getElementById("basura").innerText=basura+"%";
+    document.getElementById("flujo").innerText=flujo+" L/min";
+
+    if(basura>85){
+        document.getElementById("estado").innerHTML="<span class='alert'>ALERTA</span>";
+    }else{
+        document.getElementById("estado").innerText="Operando";
+    }
+
+    historial.push(basura);
+    if(historial.length>10) historial.shift();
+}
+setInterval(actualizar,2000);
+actualizar();
+
+// RED DE SENSORES
+let red=document.getElementById("redSensores");
+for(let i=1;i<=12;i++){
+    let div=document.createElement("div");
+    div.className="sensor";
+    div.innerHTML="Sensor "+i+"<br>"+Math.floor(Math.random()*100)+"%";
+    red.appendChild(div);
+}
+
+// MAPA
+var map=L.map('map').setView([20.6736,-103.344],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.marker([20.6736,-103.344]).addTo(map).bindPopup("Zona Centro");
+
+// GRÁFICA HISTÓRICA
+new Chart(document.getElementById('grafica'),{
+    type:'line',
+    data:{
+        labels:["1","2","3","4","5","6","7","8","9","10"],
+        datasets:[{
+            label:"Historial Nivel Basura",
+            data:historial,
+            tension:0.4
+        }]
+    }
+});
+
+// PDF
+function generarPDF(){
+    let doc=new jsPDF();
+    doc.text("Reporte EcoDren",20,20);
+    doc.text("Nivel actual de basura: "+document.getElementById("basura").innerText,20,40);
+    doc.text("Flujo de agua: "+document.getElementById("flujo").innerText,20,50);
+    doc.save("Reporte_EcoDren.pdf");
+}
+</script>
+
+</body>
+</html>
