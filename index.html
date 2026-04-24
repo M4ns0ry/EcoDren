@@ -19,7 +19,12 @@
     --primary:#22c55e;
     --water:#0ea5e9;
     --danger:#ef4444;
-    --warning:#f59e0b;
+}
+
+.light{
+    --bg:#f1f5f9;
+    --card:#ffffff;
+    --text:#0f172a;
 }
 
 body{
@@ -31,30 +36,42 @@ body{
 
 header{
     display:flex;
-    justify-content:space-between;
     align-items:center;
-    padding:20px;
+    gap:15px;
+    padding:15px;
     background:linear-gradient(90deg,#0ea5e9,#22c55e);
 }
 
-header h1{
-    margin:0;
-}
-
-nav{
-    display:flex;
-    gap:20px;
-    padding:15px;
-    background:var(--card);
-    justify-content:center;
-}
-
-nav button{
-    background:none;
-    border:none;
-    color:var(--text);
+.menu-btn{
+    font-size:22px;
     cursor:pointer;
-    font-weight:bold;
+}
+
+.sidebar{
+    position:fixed;
+    top:0;
+    left:-250px;
+    width:250px;
+    height:100%;
+    background:var(--card);
+    padding:20px;
+    transition:0.3s;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.sidebar button{
+    display:block;
+    width:100%;
+    margin:10px 0;
+    padding:10px;
+    border:none;
+    background:none;
+    color:var(--text);
+    text-align:left;
+    cursor:pointer;
 }
 
 .section{
@@ -71,11 +88,10 @@ nav button{
     padding:20px;
     border-radius:15px;
     margin-bottom:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
 .metric{
-    font-size:28px;
+    font-size:26px;
     font-weight:bold;
 }
 
@@ -98,40 +114,33 @@ nav button{
 
 #map{
     height:350px;
-    border-radius:15px;
 }
 
 button.main{
-    padding:12px 20px;
+    padding:10px;
     border:none;
     border-radius:10px;
     background:var(--primary);
-    color:black;
-    font-weight:bold;
     cursor:pointer;
     margin-top:10px;
-}
-
-button.danger{
-    background:var(--danger);
-    color:white;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-    <h1>🌍 EcoDren</h1>
-    <button onclick="toggleMode()">Modo Claro/Oscuro</button>
-</header>
-
-<nav>
+<div class="sidebar" id="sidebar">
     <button onclick="showSection('dashboard')">Dashboard</button>
-    <button onclick="showSection('sensores')">Red Sensores</button>
+    <button onclick="showSection('sensores')">Sensores</button>
     <button onclick="showSection('mapa')">Mapa</button>
     <button onclick="showSection('historico')">Estadísticas</button>
-</nav>
+</div>
+
+<header>
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <h2>EcoDren</h2>
+    <button onclick="toggleMode()">🌙</button>
+</header>
 
 <section id="dashboard" class="section active">
 <div class="card">
@@ -154,13 +163,13 @@ button.danger{
     <div class="metric" id="riesgo">0</div>
 </div>
 
-<button class="main danger" onclick="lluviaIntensa()">Simular lluvia intensa</button>
-<button class="main" onclick="generarPDF()">Generar Reporte PDF</button>
+<button class="main" onclick="lluviaIntensa()">Simular lluvia intensa</button>
+<button class="main" onclick="generarPDF()">Generar PDF</button>
 </section>
 
 <section id="sensores" class="section">
 <div class="card">
-    <h3>Red de Sensores Conectados</h3>
+    <h3>Red de Sensores</h3>
     <div class="sensor-grid" id="redSensores"></div>
 </div>
 </section>
@@ -180,9 +189,17 @@ button.danger{
 <script>
 const { jsPDF } = window.jspdf;
 
+function toggleMenu(){
+    document.getElementById("sidebar").classList.toggle("active");
+}
+
 function showSection(id){
     document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
+
+    if(id === 'mapa'){
+        setTimeout(()=>{ map.invalidateSize(); }, 200);
+    }
 }
 
 function toggleMode(){
@@ -197,24 +214,19 @@ function actualizar(){
     let flujo=Math.floor(Math.random()*600);
 
     let basuraEl=document.getElementById("basura");
-    let flujoEl=document.getElementById("flujo");
     let estadoEl=document.getElementById("estado");
 
     basuraEl.innerText=basura+"%";
-    flujoEl.innerText=flujo+" L/min";
+    document.getElementById("flujo").innerText=flujo+" L/min";
 
     if(basura>85 || flujo>500){
         estadoEl.innerHTML="<span class='alert'>ALERTA</span>";
         zonasRiesgo++;
-    }else{
+    } else {
         estadoEl.innerText="Operando";
     }
 
     document.getElementById("riesgo").innerText=zonasRiesgo;
-
-    if(basura<50) basuraEl.style.color="lightgreen";
-    else if(basura<80) basuraEl.style.color="orange";
-    else basuraEl.style.color="red";
 
     historial.push(basura);
     if(historial.length>10) historial.shift();
@@ -226,10 +238,9 @@ function actualizar(){
 }
 
 setInterval(actualizar,2000);
-actualizar();
 
 function lluviaIntensa(){
-    zonasRiesgo += Math.floor(Math.random()*5)+1;
+    zonasRiesgo += 3;
     document.getElementById("estado").innerHTML="<span class='alert'>LLUVIA INTENSA</span>";
 }
 
@@ -237,13 +248,12 @@ let red=document.getElementById("redSensores");
 for(let i=1;i<=12;i++){
     let div=document.createElement("div");
     div.className="sensor";
-    div.innerHTML="Sensor "+i;
+    div.innerText="Sensor "+i;
     red.appendChild(div);
 }
 
 function actualizarSensores(){
-    let sensores=document.querySelectorAll(".sensor");
-    sensores.forEach((s,i)=>{
+    document.querySelectorAll(".sensor").forEach((s,i)=>{
         let val=Math.floor(Math.random()*100);
         s.innerHTML=`Sensor ${i+1}<br>${val}%`;
     });
@@ -255,7 +265,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 for(let i=0;i<6;i++){
     let lat=20.67+(Math.random()-0.5)/100;
     let lng=-103.34+(Math.random()-0.5)/100;
-    L.marker([lat,lng]).addTo(map).bindPopup("Sensor activo");
+    L.marker([lat,lng]).addTo(map);
 }
 
 let chart=new Chart(document.getElementById('grafica'),{
@@ -263,20 +273,19 @@ let chart=new Chart(document.getElementById('grafica'),{
     data:{
         labels:["1","2","3","4","5","6","7","8","9","10"],
         datasets:[{
-            label:"Historial Nivel Basura",
-            data:historial,
-            tension:0.4
+            label:"Nivel de basura",
+            data:historial
         }]
     }
 });
 
 function generarPDF(){
     let doc=new jsPDF();
-    doc.text("Reporte EcoDren",20,20);
-    doc.text("Nivel de basura: "+document.getElementById("basura").innerText,20,40);
+    doc.text("EcoDren Reporte",20,20);
+    doc.text("Basura: "+document.getElementById("basura").innerText,20,40);
     doc.text("Flujo: "+document.getElementById("flujo").innerText,20,50);
-    doc.text("Zonas en riesgo: "+zonasRiesgo,20,60);
-    doc.save("Reporte_EcoDren.pdf");
+    doc.text("Zonas riesgo: "+zonasRiesgo,20,60);
+    doc.save("reporte.pdf");
 }
 </script>
 
