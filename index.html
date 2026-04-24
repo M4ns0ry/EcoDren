@@ -42,101 +42,34 @@ header{
     background:linear-gradient(90deg,#0ea5e9,#22c55e);
 }
 
-.menu-btn{
-    font-size:22px;
-    cursor:pointer;
-}
+.menu-btn{font-size:22px;cursor:pointer;}
 
 .sidebar{
-    position:fixed;
-    top:0;
-    left:-250px;
-    width:250px;
-    height:100%;
-    background:var(--card);
-    padding:20px;
-    transition:0.3s;
+    position:fixed;top:0;left:-250px;width:250px;height:100%;
+    background:var(--card);padding:20px;transition:0.3s;
 }
-
-.sidebar.active{
-    left:0;
-}
+.sidebar.active{left:0;}
 
 .sidebar button{
-    display:block;
-    width:100%;
-    margin:10px 0;
-    padding:12px;
-    border:none;
-    border-radius:8px;
-    background:rgba(255,255,255,0.05);
-    color:var(--text);
-    text-align:left;
-    cursor:pointer;
-    font-weight:bold;
-    transition:0.2s;
+    display:block;width:100%;margin:10px 0;padding:12px;
+    border:none;border-radius:8px;background:rgba(255,255,255,0.05);
+    color:var(--text);text-align:left;cursor:pointer;font-weight:bold;
 }
+.sidebar button:hover{background:var(--primary);color:black;}
 
-.sidebar button:hover{
-    background:var(--primary);
-    color:black;
-}
+.section{display:none;padding:20px;}
+.active{display:block;}
 
-.light .sidebar button{
-    background:rgba(0,0,0,0.05);
-    color:var(--text);
-}
+.card{background:var(--card);padding:20px;border-radius:15px;margin-bottom:20px;}
+.metric{font-size:26px;font-weight:bold;}
+.alert{color:var(--danger);}
 
-.section{
-    display:none;
-    padding:20px;
-}
+.sensor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.sensor{padding:15px;border-radius:10px;background:#1f2937;text-align:center;}
 
-.active{
-    display:block;
-}
+#map{height:350px;}
+button.main{padding:10px;border:none;border-radius:10px;background:var(--primary);cursor:pointer;margin-top:10px;}
 
-.card{
-    background:var(--card);
-    padding:20px;
-    border-radius:15px;
-    margin-bottom:20px;
-}
-
-.metric{
-    font-size:26px;
-    font-weight:bold;
-}
-
-.alert{
-    color:var(--danger);
-}
-
-.sensor-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-    gap:10px;
-}
-
-.sensor{
-    padding:15px;
-    border-radius:10px;
-    background:#1f2937;
-    text-align:center;
-}
-
-#map{
-    height:350px;
-}
-
-button.main{
-    padding:10px;
-    border:none;
-    border-radius:10px;
-    background:var(--primary);
-    cursor:pointer;
-    margin-top:10px;
-}
 </style>
 </head>
 
@@ -147,6 +80,7 @@ button.main{
     <button onclick="showSection('sensores')">Sensores</button>
     <button onclick="showSection('mapa')">Mapa</button>
     <button onclick="showSection('historico')">Estadísticas</button>
+    <button onclick="showSection('info')">¿Cómo funciona?</button>
 </div>
 
 <header>
@@ -156,149 +90,127 @@ button.main{
 </header>
 
 <section id="dashboard" class="section active">
-<div class="card">
-    <h3>Nivel de Basura</h3>
-    <div class="metric" id="basura">0%</div>
-</div>
+<div class="card"><h3>Nivel de Basura</h3><div class="metric" id="basura">0%</div></div>
+<div class="card"><h3>Flujo de Agua</h3><div class="metric" id="flujo">0 L/min</div></div>
+<div class="card"><h3>Estado</h3><div class="metric" id="estado">Normal</div></div>
+<div class="card"><h3>Zonas en Riesgo</h3><div class="metric" id="riesgo">0</div></div>
 
-<div class="card">
-    <h3>Flujo de Agua</h3>
-    <div class="metric" id="flujo">0 L/min</div>
-</div>
-
-<div class="card">
-    <h3>Estado</h3>
-    <div class="metric" id="estado">Normal</div>
-</div>
-
-<div class="card">
-    <h3>Zonas en Riesgo</h3>
-    <div class="metric" id="riesgo">0</div>
-</div>
+<input type="range" min="0" max="100" id="lluvia">
+<label>Intensidad de lluvia</label>
 
 <button class="main" onclick="lluviaIntensa()">Simular lluvia intensa</button>
+<button class="main" onclick="modoEmergencia()">Modo emergencia</button>
 <button class="main" onclick="generarPDF()">Generar PDF</button>
 </section>
 
 <section id="sensores" class="section">
-<div class="card">
-    <h3>Red de Sensores</h3>
-    <div class="sensor-grid" id="redSensores"></div>
-</div>
+<div class="card"><h3>Red de Sensores</h3><div class="sensor-grid" id="redSensores"></div></div>
 </section>
 
 <section id="mapa" class="section">
-<div class="card">
-    <div id="map"></div>
-</div>
+<div class="card"><div id="map"></div></div>
 </section>
 
 <section id="historico" class="section">
+<div class="card"><canvas id="grafica"></canvas></div>
+</section>
+
+<section id="info" class="section">
 <div class="card">
-    <canvas id="grafica"></canvas>
+<h3>¿Cómo funciona EcoDren?</h3>
+<p>EcoDren utiliza sensores inteligentes para medir flujo de agua y obstrucción. Analiza datos en tiempo real para prevenir inundaciones.</p>
 </div>
 </section>
 
 <script>
 const { jsPDF } = window.jspdf;
 
-function toggleMenu(){
-    document.getElementById("sidebar").classList.toggle("active");
-}
+function toggleMenu(){document.getElementById("sidebar").classList.toggle("active");}
+function toggleMode(){document.body.classList.toggle("light");}
 
 function showSection(id){
-    document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ if(id==='mapa'){setTimeout(()=>map.invalidateSize(),200);} }
 
-    if(id === 'mapa'){
-        setTimeout(()=>{ map.invalidateSize(); }, 200);
-    }
-}
-
-function toggleMode(){
-    document.body.classList.toggle("light");
-}
-
-let historial=[];
+let historial=JSON.parse(localStorage.getItem("historial"))||[];
 let zonasRiesgo=0;
 
+function notificar(msg){
+ let n=document.createElement("div");
+ n.innerText=msg;
+ n.style.position="fixed";n.style.bottom="20px";n.style.right="20px";
+ n.style.background="red";n.style.color="white";n.style.padding="10px";
+ document.body.appendChild(n);
+ setTimeout(()=>n.remove(),3000);
+}
+
 function actualizar(){
-    let basura=Math.floor(Math.random()*100);
-    let flujo=Math.floor(Math.random()*600);
+ let basura=Math.floor(Math.random()*100);
+ let flujo=Math.floor(Math.random()*600);
+ let lluvia=document.getElementById("lluvia").value||0;
+ flujo+=parseInt(lluvia);
 
-    let basuraEl=document.getElementById("basura");
-    let estadoEl=document.getElementById("estado");
+ document.getElementById("basura").innerText=basura+"%";
+ document.getElementById("flujo").innerText=flujo+" L/min";
 
-    basuraEl.innerText=basura+"%";
-    document.getElementById("flujo").innerText=flujo+" L/min";
+ let promedio=historial.reduce((a,b)=>a+b,0)/ (historial.length||1);
 
-    if(basura>85 || flujo>500){
-        estadoEl.innerHTML="<span class='alert'>ALERTA</span>";
-        zonasRiesgo++;
-    } else {
-        estadoEl.innerText="Operando";
-    }
+ if(basura>85||flujo>500){zonasRiesgo++;notificar("⚠️ Riesgo detectado");}
+ if(promedio>70){document.getElementById("estado").innerHTML="<span class='alert'>RIESGO PRÓXIMO</span>";}
+ else{document.getElementById("estado").innerText="Operando";}
 
-    document.getElementById("riesgo").innerText=zonasRiesgo;
+ document.getElementById("riesgo").innerText=zonasRiesgo;
 
-    historial.push(basura);
-    if(historial.length>10) historial.shift();
+ historial.push(basura);
+ if(historial.length>10)historial.shift();
+ localStorage.setItem("historial",JSON.stringify(historial));
 
-    chart.data.datasets[0].data=historial;
-    chart.update();
+ chart.data.datasets[0].data=historial;
+ chart.update();
 
-    actualizarSensores();
+ actualizarSensores();
+
+ if(zonasRiesgo>10){document.body.style.borderTop="5px solid red";}
 }
 
 setInterval(actualizar,2000);
 
-function lluviaIntensa(){
-    zonasRiesgo += 3;
-    document.getElementById("estado").innerHTML="<span class='alert'>LLUVIA INTENSA</span>";
-}
+function lluviaIntensa(){zonasRiesgo+=3;notificar("🌧️ Lluvia intensa");}
+function modoEmergencia(){zonasRiesgo+=10;notificar("🚨 Emergencia ciudad");}
 
 let red=document.getElementById("redSensores");
-for(let i=1;i<=12;i++){
-    let div=document.createElement("div");
-    div.className="sensor";
-    div.innerText="Sensor "+i;
-    red.appendChild(div);
-}
+for(let i=1;i<=12;i++){let d=document.createElement("div");d.className="sensor";red.appendChild(d);} 
 
 function actualizarSensores(){
-    document.querySelectorAll(".sensor").forEach((s,i)=>{
-        let val=Math.floor(Math.random()*100);
-        s.innerHTML=`Sensor ${i+1}<br>${val}%`;
-    });
-}
+ document.querySelectorAll(".sensor").forEach((s,i)=>{
+ let val=Math.floor(Math.random()*100);
+ s.innerHTML=`Sensor ${i+1}<br>${val}%`;
+ });}
 
 var map=L.map('map').setView([20.6736,-103.344],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 for(let i=0;i<6;i++){
-    let lat=20.67+(Math.random()-0.5)/100;
-    let lng=-103.34+(Math.random()-0.5)/100;
-    L.marker([lat,lng]).addTo(map);
+ let lat=20.67+(Math.random()-0.5)/100;
+ let lng=-103.34+(Math.random()-0.5)/100;
+ let nivel=Math.random()*100;
+ let marker=L.circleMarker([lat,lng],{color:nivel>70?'red':'green'}).addTo(map);
 }
 
 let chart=new Chart(document.getElementById('grafica'),{
-    type:'line',
-    data:{
-        labels:["1","2","3","4","5","6","7","8","9","10"],
-        datasets:[{
-            label:"Nivel de basura",
-            data:historial
-        }]
-    }
+ type:'line',
+ data:{labels:["1","2","3","4","5","6","7","8","9","10"],
+ datasets:[{label:"Nivel basura",data:historial}]}
 });
 
 function generarPDF(){
-    let doc=new jsPDF();
-    doc.text("EcoDren Reporte",20,20);
-    doc.text("Basura: "+document.getElementById("basura").innerText,20,40);
-    doc.text("Flujo: "+document.getElementById("flujo").innerText,20,50);
-    doc.text("Zonas riesgo: "+zonasRiesgo,20,60);
-    doc.save("reporte.pdf");
+ let doc=new jsPDF();
+ doc.text("EcoDren Reporte",20,20);
+ doc.text("Basura: "+document.getElementById("basura").innerText,20,40);
+ doc.text("Flujo: "+document.getElementById("flujo").innerText,20,50);
+ doc.text("Zonas riesgo: "+zonasRiesgo,20,60);
+ doc.save("reporte.pdf");
 }
 </script>
 
