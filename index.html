@@ -13,17 +13,13 @@
 
 <style>
 :root{
-    --bg:#0f172a;
-    --card:#1e293b;
-    --text:white;
-    --primary:#0ea5e9;
+    --bg:#0a0f1f;
+    --card:#111827;
+    --text:#e5e7eb;
+    --primary:#22c55e;
+    --water:#0ea5e9;
     --danger:#ef4444;
-}
-
-.light{
-    --bg:#f1f5f9;
-    --card:white;
-    --text:#0f172a;
+    --warning:#f59e0b;
 }
 
 body{
@@ -31,44 +27,18 @@ body{
     font-family:'Inter',sans-serif;
     background:var(--bg);
     color:var(--text);
-    transition:0.4s;
-}
-
-/* LOGIN */
-#login{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    flex-direction:column;
-    background:linear-gradient(135deg,#0ea5e9,#22c55e);
-}
-
-#login input{
-    padding:10px;
-    margin:5px;
-    border-radius:10px;
-    border:none;
-}
-
-#login button{
-    padding:10px 20px;
-    border:none;
-    border-radius:10px;
-    background:black;
-    color:white;
-    cursor:pointer;
-}
-
-#app{
-    display:none;
 }
 
 header{
     display:flex;
     justify-content:space-between;
+    align-items:center;
     padding:20px;
     background:linear-gradient(90deg,#0ea5e9,#22c55e);
+}
+
+header h1{
+    margin:0;
 }
 
 nav{
@@ -84,6 +54,7 @@ nav button{
     border:none;
     color:var(--text);
     cursor:pointer;
+    font-weight:bold;
 }
 
 .section{
@@ -100,17 +71,16 @@ nav button{
     padding:20px;
     border-radius:15px;
     margin-bottom:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
 .metric{
-    font-size:26px;
+    font-size:28px;
     font-weight:bold;
 }
 
 .alert{
     color:var(--danger);
-    font-weight:bold;
 }
 
 .sensor-grid{
@@ -122,7 +92,7 @@ nav button{
 .sensor{
     padding:15px;
     border-radius:10px;
-    background:#334155;
+    background:#1f2937;
     text-align:center;
 }
 
@@ -130,24 +100,29 @@ nav button{
     height:350px;
     border-radius:15px;
 }
+
+button.main{
+    padding:12px 20px;
+    border:none;
+    border-radius:10px;
+    background:var(--primary);
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+button.danger{
+    background:var(--danger);
+    color:white;
+}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="login">
-    <h1>🌍 EcoDren Admin</h1>
-    <input type="text" id="user" placeholder="Usuario">
-    <input type="password" id="pass" placeholder="Contraseña">
-    <button onclick="login()">Ingresar</button>
-</div>
-
-<!-- APP -->
-<div id="app">
-
 <header>
-    <h2>EcoDren - Panel Inteligente</h2>
+    <h1>🌍 EcoDren</h1>
     <button onclick="toggleMode()">Modo Claro/Oscuro</button>
 </header>
 
@@ -174,7 +149,13 @@ nav button{
     <div class="metric" id="estado">Normal</div>
 </div>
 
-<button onclick="generarPDF()">Generar Reporte PDF</button>
+<div class="card">
+    <h3>Zonas en Riesgo</h3>
+    <div class="metric" id="riesgo">0</div>
+</div>
+
+<button class="main danger" onclick="lluviaIntensa()">Simular lluvia intensa</button>
+<button class="main" onclick="generarPDF()">Generar Reporte PDF</button>
 </section>
 
 <section id="sensores" class="section">
@@ -196,71 +177,88 @@ nav button{
 </div>
 </section>
 
-</div>
-
 <script>
 const { jsPDF } = window.jspdf;
 
-// LOGIN
-function login(){
-    let u=document.getElementById("user").value;
-    let p=document.getElementById("pass").value;
-    if(u==="EcoDren" && p==="Alcantarilla"){
-        document.getElementById("login").style.display="none";
-        document.getElementById("app").style.display="block";
-    } else {
-        alert("Credenciales incorrectas");
-    }
-}
-
-// SECCIONES
 function showSection(id){
     document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
 }
 
-// MODO
 function toggleMode(){
     document.body.classList.toggle("light");
 }
 
-// SIMULACIÓN
 let historial=[];
+let zonasRiesgo=0;
+
 function actualizar(){
     let basura=Math.floor(Math.random()*100);
     let flujo=Math.floor(Math.random()*600);
 
-    document.getElementById("basura").innerText=basura+"%";
-    document.getElementById("flujo").innerText=flujo+" L/min";
+    let basuraEl=document.getElementById("basura");
+    let flujoEl=document.getElementById("flujo");
+    let estadoEl=document.getElementById("estado");
 
-    if(basura>85){
-        document.getElementById("estado").innerHTML="<span class='alert'>ALERTA</span>";
+    basuraEl.innerText=basura+"%";
+    flujoEl.innerText=flujo+" L/min";
+
+    if(basura>85 || flujo>500){
+        estadoEl.innerHTML="<span class='alert'>ALERTA</span>";
+        zonasRiesgo++;
     }else{
-        document.getElementById("estado").innerText="Operando";
+        estadoEl.innerText="Operando";
     }
+
+    document.getElementById("riesgo").innerText=zonasRiesgo;
+
+    if(basura<50) basuraEl.style.color="lightgreen";
+    else if(basura<80) basuraEl.style.color="orange";
+    else basuraEl.style.color="red";
 
     historial.push(basura);
     if(historial.length>10) historial.shift();
+
+    chart.data.datasets[0].data=historial;
+    chart.update();
+
+    actualizarSensores();
 }
+
 setInterval(actualizar,2000);
 actualizar();
 
-// RED DE SENSORES
+function lluviaIntensa(){
+    zonasRiesgo += Math.floor(Math.random()*5)+1;
+    document.getElementById("estado").innerHTML="<span class='alert'>LLUVIA INTENSA</span>";
+}
+
 let red=document.getElementById("redSensores");
 for(let i=1;i<=12;i++){
     let div=document.createElement("div");
     div.className="sensor";
-    div.innerHTML="Sensor "+i+"<br>"+Math.floor(Math.random()*100)+"%";
+    div.innerHTML="Sensor "+i;
     red.appendChild(div);
 }
 
-// MAPA
+function actualizarSensores(){
+    let sensores=document.querySelectorAll(".sensor");
+    sensores.forEach((s,i)=>{
+        let val=Math.floor(Math.random()*100);
+        s.innerHTML=`Sensor ${i+1}<br>${val}%`;
+    });
+}
+
 var map=L.map('map').setView([20.6736,-103.344],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-L.marker([20.6736,-103.344]).addTo(map).bindPopup("Zona Centro");
 
-// GRÁFICA HISTÓRICA
-new Chart(document.getElementById('grafica'),{
+for(let i=0;i<6;i++){
+    let lat=20.67+(Math.random()-0.5)/100;
+    let lng=-103.34+(Math.random()-0.5)/100;
+    L.marker([lat,lng]).addTo(map).bindPopup("Sensor activo");
+}
+
+let chart=new Chart(document.getElementById('grafica'),{
     type:'line',
     data:{
         labels:["1","2","3","4","5","6","7","8","9","10"],
@@ -272,12 +270,12 @@ new Chart(document.getElementById('grafica'),{
     }
 });
 
-// PDF
 function generarPDF(){
     let doc=new jsPDF();
     doc.text("Reporte EcoDren",20,20);
-    doc.text("Nivel actual de basura: "+document.getElementById("basura").innerText,20,40);
-    doc.text("Flujo de agua: "+document.getElementById("flujo").innerText,20,50);
+    doc.text("Nivel de basura: "+document.getElementById("basura").innerText,20,40);
+    doc.text("Flujo: "+document.getElementById("flujo").innerText,20,50);
+    doc.text("Zonas en riesgo: "+zonasRiesgo,20,60);
     doc.save("Reporte_EcoDren.pdf");
 }
 </script>
